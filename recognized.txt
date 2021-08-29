@@ -1,0 +1,21 @@
+recognized = {
+    'intent': 'comprar',
+    'special': [],
+    'entities': [],
+}
+
+flows = {
+    'categoria de produtos': {
+        'intent': 'comprar',
+        'special': [],
+        'entities': [],
+    },
+    'problemas na compra': {
+        'intent': 'comprar',
+        'special': ['usuário incapacitado'],
+    }
+    'comprar pizza': {
+        'intent': 'comprar',
+        'special': 
+    }
+}
