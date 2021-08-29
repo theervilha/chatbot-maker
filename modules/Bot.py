@@ -6,6 +6,8 @@ import telebot
 
 from modules.extractors.Entities import Entities
 from modules.extractors.Sets import Sets
+from modules.recognize.SetRecognizer import SetRecognizer
+from modules.recognize.EntityRecognizer import EntityRecognizer
 
 class Bot(ABC):
 	def __init__(self, TELEGRAM_TOKEN, flows):
@@ -18,7 +20,6 @@ class Bot(ABC):
 		print(self.sets)
 		self.entities = Entities().get()
 		print(self.entities)
-		#print(self.SetRecognizer.sets)
 
 
 	def run(self):
