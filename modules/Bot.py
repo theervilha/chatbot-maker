@@ -2,7 +2,7 @@ from datetime import datetime
 import os
 import pandas as pd
 
-import re, string
+import re, string, regex
 from unidecode import unidecode as remove_accents
 
 from abc import ABC
@@ -28,6 +28,12 @@ class Bot(ABC):
 		print(self.entities)
 		self.set_recognizer = SetRecognizer(self.sets)
 		self.entity_recognizer = EntityRecognizer(self.entities)
+
+
+		self.metadata = {
+			'intent': [],
+			'entity': [],
+		}
 
 
 	def run(self):
@@ -79,10 +85,13 @@ class Bot(ABC):
 	def storeData(self):
 		self.data = self.data.append({
 			'chat_id': self.chatId,
+			'session': self.session,
 			'user_message': self.user_message,
 			'bot_response': self.bot_responses,
-			'datetime': self.datetime.strftime("%Y-%m-%d %H:%M:%S"),
+			'metadata': self.metadata,
 			'context': self.context,
+			'datetime': self.datetime.strftime("%Y-%m-%d %H:%M:%S"),
+
 		}, ignore_index=True)
 
 	def saveData(self, path='reports'):
@@ -99,7 +108,38 @@ class Bot(ABC):
 			self.userHistory = pd.DataFrame()
 
 	def getUserSession(self):
-		if len(self.userHistory) == 0:
-			self.userSession = 'firstSession'
-		else:
-			self.userSession = 'anotherSession'
+		try:
+			self.session = len(self.userHistory['sessions'].unique())
+		except KeyError:
+			self.session = 0
+
+	def put_variables_in_bot_responses_if_there(self):
+		for j, self.bot_response in enumerate(self.bot_responses):
+			r = regex.compile(r'\{((?:[^{}]|(?R))+)\}')
+			variation = 0
+			self.counter = {'intent': 0, 'entity': 0}
+			for m in r.finditer(self.bot_response):
+				captured = m.captures()[0][1:-1] # ['{intent}'] --> 'intent'
+				to_replace = self.get_variable_to_replace(captured)
+				self.counter[captured] += 1
+
+				start_index, end_index = m.start()+variation, m.end()+variation
+				self.bot_responses[j] = self.bot_responses[j][:start_index] + to_replace + self.bot_responses[j][m.end():]
+
+				variation += (m.end() - m.start()) - (len(captured) + 3) 
+
+		return self.bot_responses
+
+	def get_variable_to_replace(self, captured):
+		try:
+			last_index = -1-self.counter[captured]
+			print('captured:',captured)
+			if captured == 'entity':
+				entity = list(self.metadata[captured][last_index].values()) # device
+				print('entity:',entity)
+				return list(entity[0].keys())[0] # computer
+			elif captured == 'intent':
+				return list(self.metadata[captured][last_index].keys())[0]
+			raise Exception(f"For some reason, the bot can't to find the metadata. Check out the name in the brackets in the bot message: '{self.bot_response}'; and the metadata.\nMetadata:",self.metadata)
+		except Exception as e:
+			raise Exception(f"For some reason,{e}... the bot can't to find the metadata. Check out the name in the brackets in the bot message: '{self.bot_response}'; and the metadata.\nMetadata:",self.metadata)

@@ -11,6 +11,7 @@ class BotBySets(Bot):
 
 		# Here the bot will respond the user according his context.
 		self.bot_responses = self.flows[self.context]['bot_response']
+		self.bot_responses = self.put_variables_in_bot_responses_if_there()
 		[self.bot.send_message(self.chatId, bot_response) for bot_response in self.bot_responses]
 
 		# Storing data
@@ -33,10 +34,14 @@ class BotBySets(Bot):
 
 		if self.context in ['', 'greetings', 'not_handled']:
 			if 'problem' in recognized_sets_by_contains and 'device' in recognized_entities_by_contains:
+				self.metadata['intent'].append(recognized_sets_by_contains)
+				self.metadata['entity'].append(recognized_entities_by_contains)
 				return 'problem recognized and item recognized'
 			elif 'problem' in recognized_sets_by_contains:
+				self.metadata['intent'].append(recognized_sets_by_contains)
 				return 'problem recognized and item not recognized'
 			elif 'device' in recognized_entities_by_contains:
+				self.metadata['entity'].append(recognized_entities_by_contains)
 				return 'problem not recognized and item recognized'
 
 			if 'greetings' in recognized_sets_by_equal:
