@@ -1,6 +1,10 @@
 from datetime import datetime
 import os
 import pandas as pd
+
+import re, string
+from unidecode import unidecode as remove_accents
+
 from abc import ABC
 import telebot
 
@@ -17,9 +21,13 @@ class Bot(ABC):
 
 	def prepare(self):
 		self.sets = Sets().get()
-		print(self.sets)
 		self.entities = Entities().get()
+		print('--- Extracted Sets ---')
+		print(self.sets)
+		print('--- Extracted Entities ---')
 		print(self.entities)
+		self.set_recognizer = SetRecognizer(self.sets)
+		self.entity_recognizer = EntityRecognizer(self.entities)
 
 
 	def run(self):
@@ -44,6 +52,7 @@ class Bot(ABC):
 
 	def processTextAndReply(self):
 		self.getData()
+		self.clear_user_message()
 
 		self.bot_responses = ["Hey! I'm a simple bot"]
 		[self.bot.send_message(self.chatId, bot_response) for bot_response in self.bot_responses]
@@ -53,15 +62,24 @@ class Bot(ABC):
 		self.saveData()
 
 	def getData(self):
-		self.userMessage = self.message.text
+		self.user_message = self.message.text
 		self.chatId = self.message.chat.id
 		self.datetime = datetime.now()
 		self.context = ''
 
+	def clear_user_message(self):
+		#self.original_text = self.user_message
+		self.user_message = self.user_message.lower()
+		self.user_message = re.sub(' +', ' ', self.user_message)
+		self.user_message = remove_accents(self.user_message)
+		self.user_message = self.user_message.strip()
+		self.user_message = self.user_message.translate(str.maketrans('', '', string.punctuation))
+		
+
 	def storeData(self):
 		self.data = self.data.append({
 			'chat_id': self.chatId,
-			'user_message': self.userMessage,
+			'user_message': self.user_message,
 			'bot_response': self.bot_responses,
 			'datetime': self.datetime.strftime("%Y-%m-%d %H:%M:%S"),
 			'context': self.context,

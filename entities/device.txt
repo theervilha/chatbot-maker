@@ -1,0 +1,24 @@
+computer
+- laptop
+- computer
+- desktop
+- workstation
+- notebook
+- microbook
+- notepad
+- netbook
+- device
+- multiprocessor
+- microprocessor
+- microcomputer
+- mainframe
+- supercomputer
+- puter
+- lappy
+
+phone
+- handheld
+- mobile
+- tablet
+- phone
+- smartphone
