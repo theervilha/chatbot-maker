@@ -5,7 +5,17 @@ class SetRecognizer(BaseRecognizer):
         self.sets = sets
         
     def get_sets_by_equal(self, user_message):
-        return {set: self.get_equals(values, user_message) for set, values in self.sets.items() if self.get_equals(values, user_message)}
+        equals = {set: self.get_equals(setvalues, user_message) for set, setvalues in self.sets.items()}
+        return {set: found_values for set, found_values in equals.items() if found_values}
 
     def get_sets_by_contains(self, user_message):
-        return {set: self.get_contains(values, user_message) for set, values in self.sets.items() if self.get_contains(values, user_message)}
+        contains = {set: self.get_contains(setvalues, user_message) for set, setvalues in self.sets.items()}
+        return {set: found_values for set, found_values in contains.items() if found_values}
+
+    def get_sets_by_words_equal(self, user_message):
+        equals = {set: self.get_words_equals(setvalues, user_message) for set, setvalues in self.sets.items()}
+        return {set: found_values for set, found_values in equals.items() if found_values}
+
+    def get_sets_by_words_contains(self, user_message):
+        contains = {set: self.get_words_contains(setvalues, user_message) for set, setvalues in self.sets.items()}
+        return {set: found_values for set, found_values in contains.items() if found_values}
