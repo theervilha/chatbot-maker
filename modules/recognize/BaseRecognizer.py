@@ -3,12 +3,10 @@ from abc import ABC
 class BaseRecognizer(ABC):
     def get_equals(self, setvalues, user_message):
         # "I cannot purchase that" == "I cannot purchase that"
-        print('getting equals: ',setvalues)
         return [v for v in setvalues if v == user_message]
 
     def get_contains(self, setvalues, user_message):
         # "I cannot purchase" in "Well, I cannot purchase that"
-        print('getting contains:', setvalues)
         return [v for v in setvalues if v in user_message]
 
     def get_words_equals(self, setvalues, user_message):
