@@ -31,7 +31,7 @@ class EntityRecognizer(BaseRecognizer):
         return {topic: {item: found_values} for topic, found_values in equal.items() 
                                             for item, item_content in found_values.items() if item_content}
 
-    def get_entities_by_contains(self, user_message):   
+    def get_entities_by_words_contains(self, user_message):   
         contains = {
             topic: {item: self.get_words_contains(item_content, user_message)}
                     for topic, entity_items in self.entities.items() 

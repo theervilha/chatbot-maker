@@ -1,0 +1,18 @@
+pedido
+- compra
+- pedid
+- mercador
+
+produto
+- prod
+- roupa
+- brinc
+- acessorio
+- sapat
+- colar
+- bermud
+- short
+- calç
+- cinto
+- item
+- itens

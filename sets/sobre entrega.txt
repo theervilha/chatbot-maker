@@ -1,0 +1,12 @@
+entreg pedi
+entreg prod
+praz entreg
+receb pedid
+receb prod
+rastr pedid
+rastr prod
+ond pedid
+onde prod
+entrega
+endereç entreg
+local entreg

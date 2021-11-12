@@ -2,6 +2,7 @@ from datetime import datetime
 import os
 import pandas as pd
 
+import itertools
 import re, string, regex
 from unidecode import unidecode as remove_accents
 
@@ -9,67 +10,43 @@ from abc import ABC
 import telebot
 from telebot import types
 
-
 from modules.extractors.Entities import Entities
 from modules.extractors.Sets import Sets
 from modules.recognize.SetRecognizer import SetRecognizer
 from modules.recognize.EntityRecognizer import EntityRecognizer
 
 class Bot(ABC):
-	def __init__(self, TELEGRAM_TOKEN, flows):
+	def __init__(self, TELEGRAM_TOKEN, flows, GoTo, restart_bot_when_new_session = True):
 		self.bot = telebot.TeleBot(TELEGRAM_TOKEN, parse_mode='HTML')
 		self.data = pd.DataFrame()
 		self.flows = flows
+		self.variables = {}
+		self.restart_bot_when_new_session = restart_bot_when_new_session
+		self.GoTo = GoTo(self)
 
 	def prepare(self):
 		self.sets = Sets().get()
 		self.entities = Entities().get()
-		print('--- Extracted Sets ---')
-		print(self.sets)
-		print('--- Extracted Entities ---')
-		print(self.entities)
 		self.set_recognizer = SetRecognizer(self.sets)
 		self.entity_recognizer = EntityRecognizer(self.entities)
-
 
 		self.metadata = {
 			'intent': [],
 			'entity': [],
 		}
 
-
 	def run(self):
-		@self.bot.message_handler(commands=['send'])
-		def send_to_all_chats(message):
-			# This method is to exemplify how to send a message to all chat ids
-			# It's also possible to send photo, audio, etc... 
-			self.message = message
-			self.getData()
-
-			to_send = self.user_message.split('/send ')[1:]
-			if not to_send:
-				self.bot.send_message(self.chatId, 'Me diga o que devo enviar para os usuários. Ex: /send Opa rapá. Joia?')
-			else:
-				data = return_all_reports_in_one()
-				all_chat_ids = data['chat_id'].unique()
-				for chat_id in all_chat_ids:
-					try:
-						self.bot.send_message(chat_id, to_send)
-					except:
-						print('não enviou mensagem para o chat:',chat_id)
-
-		def return_all_reports_in_one():
-			filenames = list(os.walk('reports'))[0][2]
-			df = pd.DataFrame()
-			for file in filenames:
-				df = df.append(pd.read_csv(f'reports/{file}'))
-			return df
-
 		@self.bot.message_handler(func=lambda m: True)
 		def processTextAndReply(message):
 			self.message = message
-			self.getUserHistory()
-			self.getUserSession()
+			self.getData()
+			self.get_user_history()
+			self.get_user_session()
+			if self.session_status == 'new session' and self.restart_bot_when_new_session:
+				self.last_context = ''
+
+			self.cleaned_user_message = self.clean_text(self.user_message)
+
 			self.processTextAndReply()
 		
 		@self.bot.message_handler(content_types=[
@@ -79,14 +56,17 @@ class Bot(ABC):
 			"channel_chat_created", "migrate_to_chat_id", "migrate_from_chat_id", "pinned_message"
 		])
 		def isNotText(message):
-			self.bot.reply_to(message, "Poxa... eu só consigo entender quando você digita algo")
+			self.bot.reply_to(message, "Poxa... eu só consigo entender quando você digita algo em formato de texto")
 
 		self.bot.polling()
 
-	def processTextAndReply(self):
-		self.getData()
-		self.clear_user_message()
+	def getData(self):
+		self.user_message = self.message.text
+		self.chatId = self.message.chat.id
+		self.datetime_user_message = datetime.now()
+		self.last_context = ''
 
+	def processTextAndReply(self):
 		self.bot_responses = ["Hey! I'm a simple bot"]
 		[self.bot.send_message(self.chatId, bot_response) for bot_response in self.bot_responses]
 
@@ -94,29 +74,55 @@ class Bot(ABC):
 		#if self.datetime.hour % 6 == 0:
 		self.saveData()
 
-	def getData(self):
-		self.user_message = self.message.text
-		self.chatId = self.message.chat.id
-		self.datetime = datetime.now()
-		self.context = ''
+	def get_user_history(self):
+		try:
+			self.userHistory = self.data.loc[self.data['chat_id'] == self.chatId]
+		except KeyError:
+			self.userHistory = pd.DataFrame()
 
-	def clear_user_message(self):
-		#self.original_text = self.user_message
-		self.user_message = self.user_message.lower()
-		self.user_message = re.sub(' +', ' ', self.user_message)
-		self.user_message = remove_accents(self.user_message)
-		self.user_message = self.user_message.strip()
-		self.user_message = self.user_message.translate(str.maketrans('', '', string.punctuation))
+	def get_user_session(self):
+		if self.userHistory.empty:
+			self.session_id = 1
+			self.session_status = 'first_session'
+			self.seconds_ellapsed_from_last_msg = 0
+		else:
+			self.update_session_id_if_so(limit_interval_msgs=15)
+	
+	def update_session_id_if_so(self, limit_interval_msgs=15):
+		self.seconds_ellapsed_from_last_msg = (self.datetime_user_message - self.userHistory['datetime_user_message'].iloc[-1])
+		self.seconds_ellapsed_from_last_msg = self.seconds_ellapsed_from_last_msg.seconds
+		if self.seconds_ellapsed_from_last_msg > limit_interval_msgs*60 : # 900 seconds = 15 minutes
+			self.session_id += 1
+			self.session_status = 'new_session'
+
+	def restart_bot_if_new_session(self):
+		pass
 		
+
+
+	def clean_text(self, text):
+		text = self.user_message.lower()
+		text = re.sub(' +', ' ', text)
+		text = remove_accents(text)
+		text = text.strip()
+		text = text.translate(str.maketrans('', '', string.punctuation)) # remove punctuations
+		#text = self.remove_repeated_chars(text)
+		return text
+		
+	def remove_repeated_chars(self, text):
+		return ''.join(c[0] for c in itertools.groupby(text))
+
 	def storeData(self):
 		self.data = self.data.append({
 			'chat_id': self.chatId,
-			'session': self.session,
+			'session_id': self.session_id,
 			'user_message': self.user_message,
-			'bot_response': self.bot_responses,
-			'metadata': self.metadata,
+			'response': self.bot_responses,
+			#'metadata': self.metadata,
 			'context': self.context,
-			'datetime': self.datetime.strftime("%Y-%m-%d %H:%M:%S"),
+			'datetime_user_message': self.datetime_user_message,#.strftime("%Y-%m-%d %H:%M:%S"),
+			'datetime_response': datetime.now(),
+			'seconds_ellapsed_from_last_msg': self.seconds_ellapsed_from_last_msg,
 			'telegram_message_data': self.message,
 		}, ignore_index=True)
 
@@ -127,17 +133,6 @@ class Bot(ABC):
 		date = datetime.now().strftime("%Y-%m-%d")
 		self.data.to_csv(f'{path}/report - {date}.csv', index=False, encoding='utf-8')
 
-	def getUserHistory(self):
-		try:
-			self.userHistory = self.data.loc[self.data['chat_id'] == self.chatId]
-		except KeyError:
-			self.userHistory = pd.DataFrame()
-
-	def getUserSession(self):
-		try:
-			self.session = len(self.userHistory['sessions'].unique())
-		except KeyError:
-			self.session = 0
 
 	def put_variables_in_bot_responses_if_there(self):
 		for j, self.bot_response in enumerate(self.bot_responses):
