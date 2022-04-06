@@ -1,7 +1,0 @@
-bot_response,chat_id,context,datetime,user_message
-"['Really? Or, let me help you...', '{API - Message to fix the problem in the computer}']",800673480.0,problem recognized and item recognized,2021-08-29 22:26:24,my computer is broken
-"[""Hey! How are you? I'm the XXX Virtual Assistant, and I can help you resolving your issues, such as opening a call to someone in XXX to fix your computer, notebook, some device; or I'll just ask you a question"", 'So, how can I help you? 😊']",800673480.0,greetings,2021-08-29 22:26:34,hey
-"[""Hey! How are you? I'm the XXX Virtual Assistant, and I can help you resolving your issues, such as opening a call to someone in XXX to fix your computer, notebook, some device; or I'll just ask you a question"", 'So, how can I help you? 😊']",800673480.0,greetings,2021-08-29 22:26:37,hey
-"['Hm.... I’m confused... But surely I’ll understand, you trust in it?', 'Tell-me more about what kind of subject are you trying to say me? You can put it in text or use the buttons:']",800673480.0,not_handled,2021-08-29 22:26:40,paskldpaskldp
-"['Really? Or, let me help you...', '{API - Message to fix the problem in the computer}']",800673480.0,problem recognized and item recognized,2021-08-29 22:26:47,my computer is broken
-"['Hm.... tell me, what’s happening in your {}?']",800673480.0,problem not recognized and item recognized,2021-08-29 22:26:51,my computer

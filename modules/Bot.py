@@ -9,6 +9,7 @@ from unidecode import unidecode as remove_accents
 from abc import ABC
 import telebot
 from telebot import types
+from modules.Database.Database import Database
 
 from modules.extractors.Entities import Entities
 from modules.extractors.Sets import Sets
@@ -17,8 +18,9 @@ from modules.recognize.EntityRecognizer import EntityRecognizer
 
 class Bot(ABC):
 	def __init__(self, TELEGRAM_TOKEN, flows, GoTo, restart_bot_when_new_session = True):
+		self.TELEGRAM_TOKEN = TELEGRAM_TOKEN
 		self.bot = telebot.TeleBot(TELEGRAM_TOKEN, parse_mode='HTML')
-		self.data = pd.DataFrame()
+		self.Database = Database()
 		self.flows = flows
 		self.variables = {}
 		self.restart_bot_when_new_session = restart_bot_when_new_session
@@ -70,9 +72,7 @@ class Bot(ABC):
 		self.bot_responses = ["Hey! I'm a simple bot"]
 		[self.bot.send_message(self.chatId, bot_response) for bot_response in self.bot_responses]
 
-		self.storeData()
-		#if self.datetime.hour % 6 == 0:
-		self.saveData()
+		self.store_data()
 
 	def get_user_history(self):
 		try:
@@ -112,27 +112,9 @@ class Bot(ABC):
 	def remove_repeated_chars(self, text):
 		return ''.join(c[0] for c in itertools.groupby(text))
 
-	def storeData(self):
-		self.data = self.data.append({
-			'chat_id': self.chatId,
-			'session_id': self.session_id,
-			'user_message': self.user_message,
-			'response': self.bot_responses,
-			#'metadata': self.metadata,
-			'context': self.context,
-			'datetime_user_message': self.datetime_user_message,#.strftime("%Y-%m-%d %H:%M:%S"),
-			'datetime_response': datetime.now(),
-			'seconds_ellapsed_from_last_msg': self.seconds_ellapsed_from_last_msg,
-			'telegram_message_data': self.message,
-		}, ignore_index=True)
-
-	def saveData(self, path='reports'):
-		if not os.path.exists(path):
-			os.makedirs(path)
-
-		date = datetime.now().strftime("%Y-%m-%d")
-		self.data.to_csv(f'{path}/report - {date}.csv', index=False, encoding='utf-8')
-
+	def store_data(self):
+		self.Database.insert_chat((self.chatId, self.TELEGRAM_TOKEN, self.datetime_user_message))
+		self.Database.insert_message((self.chatId, self.context, self.user_message, self.bot_responses, self.datetime_user_message, datetime.now()))
 
 	def put_variables_in_bot_responses_if_there(self):
 		for j, self.bot_response in enumerate(self.bot_responses):
