@@ -23,6 +23,7 @@ class Bot(ABC):
 		self.Database = Database()
 		self.flows = flows
 		self.variables = {}
+		self.context = ''
 		self.restart_bot_when_new_session = restart_bot_when_new_session
 		self.GoTo = GoTo(self)
 
@@ -75,30 +76,26 @@ class Bot(ABC):
 		self.store_data()
 
 	def get_user_history(self):
-		try:
-			self.userHistory = self.data.loc[self.data['chat_id'] == self.chatId]
-		except KeyError:
-			self.userHistory = pd.DataFrame()
+		self.user_history = self.Database.get_messages_from_chat_id(self.chatId)
 
 	def get_user_session(self):
-		if self.userHistory.empty:
+		if self.user_history.empty:
 			self.session_id = 1
 			self.session_status = 'first_session'
-			self.seconds_ellapsed_from_last_msg = 0
 		else:
-			self.update_session_id_if_so(limit_interval_msgs=15)
+			self.update_session_id()
 	
-	def update_session_id_if_so(self, limit_interval_msgs=15):
-		self.seconds_ellapsed_from_last_msg = (self.datetime_user_message - self.userHistory['datetime_user_message'].iloc[-1])
-		self.seconds_ellapsed_from_last_msg = self.seconds_ellapsed_from_last_msg.seconds
+	def update_session_id(self, limit_interval_msgs=15):
+		self.session_id = int(self.user_history['session_id'].iloc[-1])
+		self.seconds_ellapsed_from_last_msg = (self.datetime_user_message - self.user_history['created_at_user_message'].iloc[-1]).seconds
 		if self.seconds_ellapsed_from_last_msg > limit_interval_msgs*60 : # 900 seconds = 15 minutes
 			self.session_id += 1
 			self.session_status = 'new_session'
+		else:
+			self.session_status = 'stay_session'
 
 	def restart_bot_if_new_session(self):
 		pass
-		
-
 
 	def clean_text(self, text):
 		text = self.user_message.lower()
@@ -114,7 +111,7 @@ class Bot(ABC):
 
 	def store_data(self):
 		self.Database.insert_chat((self.chatId, self.TELEGRAM_TOKEN, self.datetime_user_message))
-		self.Database.insert_message((self.chatId, self.context, self.user_message, self.bot_responses, self.datetime_user_message, datetime.now()))
+		self.Database.insert_message((self.chatId, self.session_id, 'teste', self.user_message, self.bot_responses, self.datetime_user_message, datetime.now()))
 
 	def put_variables_in_bot_responses_if_there(self):
 		for j, self.bot_response in enumerate(self.bot_responses):

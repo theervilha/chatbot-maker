@@ -11,10 +11,8 @@ class BotBySets(Bot):
 
 		self.reply()
 				
-		self.storeData()
-		#if int(self.datetime.hour) % 6 == 0:
-		self.saveData()
-
+		self.store_data()
+		
 	def recognize(self):
 		recognized_sets_by_contains = self.set_recognizer.get_sets_by_contains(self.user_message)
 		recognized_sets_by_equal = self.set_recognizer.get_sets_by_equal(self.user_message)
@@ -90,10 +88,10 @@ class BotBySets(Bot):
 			return 'greetings'"""
 	
 		
-		if self.session_status == 'first_session':
-			self.bot_responses.extend(self.GoTo.go_to['greetings']())
-			return ''
-			#self.quick_replies = self.go_to['saudacao']
+		#if self.session_status == 'first_session':
+		self.bot_responses.extend(self.GoTo.go_to['greetings']())
+		return ''
+		#self.quick_replies = self.go_to['saudacao']
 
 	def reply(self):
 		#self.bot_responses = self.flows[self.context]['bot_response']
